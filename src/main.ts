@@ -1,7 +1,7 @@
 /* 
 MIT License
 
-Copyright (c) 2021 Felipe Rodriguez Herrera
+Copyright (c) 2025 Felipe Rodriguez Herrera
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,9 +22,45 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
 
-import { Kore } from "./Kore";
-import { getSoKore } from "./getSoKore";
-import { useSoKore } from "./useSoKore";
-import { useKore } from "./useKore";
+import React, { useEffect, useMemo, useState } from "react";
 
-export { Kore, useSoKore, getSoKore, useKore };
+type funObject<T, Q, N> = {
+  state : () => T,
+  setState : Q,
+  noSet? : N
+}
+
+const listeners = Symbol("listeners");
+
+const initFun = <T, Q extends Record<string, any>, const N extends Record<string, any>>(fun : funObject<T, Q, N>) : Readonly<[ T, Q & N ]> => {
+
+  if( !(fun as any)[listeners] ){
+    fun.setState = new Proxy( fun.setState, {
+      get(target: any, thisArg: any) {
+        return function(...argumentsList: any[]) {
+          const res = target[thisArg](...argumentsList);
+          (fun as any)[listeners]?.forEach( (l : React.Dispatch<React.SetStateAction<T>>) => l( fun.state() ) );
+          return res
+        }
+      }
+    });
+    (fun as any)[listeners] = new Set<React.Dispatch<React.SetStateAction<T>>>();
+  }
+
+  return [fun.state(), { ...fun.noSet, ...fun.setState } as Q & N ]
+} 
+
+export function useFun<T, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N>  ) : Readonly<[ T, Q & N ]> {
+  const [stateFun, funActions] = useMemo( () => initFun( fun ) , [] );
+  const [state, setState] = useState( stateFun );
+
+  useEffect( () => {
+    (fun as any)[listeners]?.add( setState );
+    return () => {
+      (fun as any)[listeners]?.delete( setState );
+    }
+  }, [] );
+
+  return [ state, funActions ] as const
+  
+}

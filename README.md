@@ -23,7 +23,7 @@ function Counter() {
 ```
 
 KeyPoints: 
-* Work with Fun functions that return an object with state and actions definitions.
+* Work with [**Fun**]ctions that return an object with state and actions definitions.
 * The Fun result can be stored and shared between components.
 * Inside the setState sub-object, update a state variable just by setting it.  
 * Heavy functions are not instantiated in every render. Minimize overhead by avoiding useCallback, useReducer, useMemo, and dependency arrays.
@@ -53,7 +53,7 @@ npm add use-fun
 
 ### Rules
 
-* All functions in setState sub-object you define call a update state. If you want to define a "read only" function, declare it in the **noSet**  sub-object
+* All functions in setState sub-object you define call a update state. If you want to define a "read only" function, declare it in the **noSet** sub-object
 * Values must change to trigger re-renders. You should create new objects or arrays if you want to change their properties or elements.
 * You can return anything in the state function, but arrays will mix up the types (union) for each element, so avoid arrays or use [ ... ] **as const** in Typescript.  
 

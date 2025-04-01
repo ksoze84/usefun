@@ -1,6 +1,6 @@
 {
   "name": "use-fun",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Simple hook and state manager for React.",
   "main": "lib/main.js",
   "module": "lib/main.esm.js",
@@ -37,16 +37,15 @@
     "url": "git+https://github.com/ksoze84/usefun.git"
   },
   "keywords": [
+    "function",
     "object",
-    "class",
     "state",
     "manager",
     "hook",
     "react",
     "shared",
     "share",
-    "instance",
-    "Selector",
+    "selector",
     "derived"
   ],
   "bugs": {

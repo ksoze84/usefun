@@ -33,8 +33,8 @@ type funObject<T, Q, N> = {
 const listeners = Symbol("listeners");
 
 const initFun = <T, Q extends Record<string, any>, const N extends Record<string, any>>(fun : funObject<T, Q, N>) : Readonly<[ T, Q & N ]> => {
-
   if( !(fun as any)[listeners] ){
+    (fun as any)[listeners] = new Set<React.Dispatch<React.SetStateAction<T>>>();
     fun.setState = new Proxy( fun.setState, {
       get(target: any, thisArg: any) {
         return function(...argumentsList: any[]) {
@@ -44,22 +44,22 @@ const initFun = <T, Q extends Record<string, any>, const N extends Record<string
         }
       }
     });
-    (fun as any)[listeners] = new Set<React.Dispatch<React.SetStateAction<T>>>();
   }
-
+  
   return [fun.state(), { ...fun.noSet, ...fun.setState } as Q & N ]
 } 
+
+
+const mounting = <T, Q, N>(fun : funObject<T, Q, N>, setState : React.Dispatch<React.SetStateAction<T>>) => {
+  (fun as any)[listeners]?.add( setState );
+  return () => (fun as any)[listeners]?.delete( setState );
+}
 
 export function useFun<T, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N>  ) : Readonly<[ T, Q & N ]> {
   const [stateFun, funActions] = useMemo( () => initFun( fun ) , [] );
   const [state, setState] = useState( stateFun );
 
-  useEffect( () => {
-    (fun as any)[listeners]?.add( setState );
-    return () => {
-      (fun as any)[listeners]?.delete( setState );
-    }
-  }, [] );
+  useEffect( () => mounting( fun, setState ), [] );
 
   return [ state, funActions ] as const
   

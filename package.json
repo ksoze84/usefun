@@ -1,0 +1,56 @@
+{
+  "name": "use-fun",
+  "version": "3.4.5",
+  "description": "Simple hook and state manager for React.",
+  "main": "lib/main.js",
+  "module": "lib/main.esm.js",
+  "author": "Felipe Rodriguez Herrera",
+  "license": "MIT",
+  "types": "lib/main.d.ts",
+  "scripts": {
+    "build": "rollup -c",
+    "deploy": "npm version minor --force -m",
+    "parche": "npm version patch --force -m",
+    "version": "git add -A ",
+    "postversion": "git push origin && git push origin --tags",
+    "templaTo": " mkdir ../${npm_config_dest} && cp -rv `ls -A | grep -vE '^(.git|scripts|node_modules|bin|build|dist|lib|package-lock.json)$'` ../${npm_config_dest}"
+  },
+  "files": [
+    "lib",
+    "package.json"
+  ],
+  "directories": {
+    "lib": "lib"
+  },
+  "devDependencies": {
+    "@types/node": "^15.3.0",
+    "@types/react": "^17.0.20",
+    "rollup": "^2.79.2",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "react": ">= 16.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ksoze84/usefun.git"
+  },
+  "keywords": [
+    "object",
+    "class",
+    "state",
+    "manager",
+    "hook",
+    "react",
+    "shared",
+    "share",
+    "instance",
+    "Selector",
+    "derived"
+  ],
+  "bugs": {
+    "url": "https://github.com/ksoze84/usefun/issues"
+  },
+  "homepage": "https://github.com/ksoze84/usefun#readme"
+}

@@ -34,34 +34,35 @@ const listeners = Symbol("listeners");
 const cancel = Symbol("cancel");
 
 /**
- * Return a signal to cancel a state update.
+ * Return signal to cancel a state update.
  * 
  * Useful for functions that should not update the state.
  * 
- * @param {P} [returnValue] - Value to return when state update is canceled.
- * @returns {Object} - Object with property [cancel] set to true and property returnValue with the given value.
+ * This does NOT UNDO the function's executed instructions.
+ * 
  */
 export const cancelFun = <P>( returnValue? : P ) => ({
     [cancel] : true,
     returnValue
-});
+}) as P;
 
-const enableSet = <T, Q extends Record<string, any>,N >( fun : funObject<T, Q, N> & { [listeners]? : Set<React.Dispatch<React.SetStateAction<T>>> }) => 
+const enableSet = <T, Q extends Record<string, any>,N >( fun : funObject<T, Q, N> & { [listeners]? : Set<(next : T, prev : T) => void> }) => 
   new Proxy( fun.setState , {
     get(target: any, thisArg: any) {
       const func = target[thisArg];
       if( func instanceof Function )
-        return (...argumentsList: Parameters<typeof func>) => {
-          const res = func(...argumentsList);
+        return async (...argumentsList: Parameters<typeof func>) => {
+          const old = fun.state();
+          const res = await func(...argumentsList);
           if(res?.[cancel]) return res?.returnValue;
-          fun[listeners]?.forEach( (l : React.Dispatch<React.SetStateAction<T>>) => l( fun.state() ) );
+          fun[listeners]?.forEach( l => l( fun.state(), old ) );
           return res;
         }
       return func;
     }
   });
 
-const initFun = <T, Q extends Record<string, any>, const N extends Record<string, any>>(fun : funObject<T, Q, N> & { [listeners]? : Set<React.Dispatch<React.SetStateAction<T>>> }) : Readonly<[ T, Q & N ]> => {
+const initFun = <T, Q extends Record<string, any>, const N extends Record<string, any>>(fun : funObject<T, Q, N> & { [listeners]? : Set<(next : T, prev : T) => void> }) : Readonly<[ T, Q & N ]> => {
   if( !fun[listeners] ){
     fun[listeners] = new Set<React.Dispatch<React.SetStateAction<T>>>();
     fun.setState = enableSet( fun );
@@ -70,10 +71,30 @@ const initFun = <T, Q extends Record<string, any>, const N extends Record<string
   return [fun.state(), { ...fun.noSet, ...fun.setState } as Q & N ]
 } 
 
-const mounting = <T, Q, N>(fun : funObject<T, Q, N>, setState : React.Dispatch<React.SetStateAction<T>>) => {
-  (fun as any)[listeners]?.add( setState );
-  return () => (fun as any)[listeners]?.delete( setState );
+
+const makeSelectDispatcher = <T, S>( select : ( state : T ) => S, setState : React.Dispatch<React.SetStateAction<T>> ) => 
+  (next : T, prev: T) => {
+    const oldSelector = select( prev );  
+    const newSelector = select( next );
+    if( (newSelector === undefined) !== (oldSelector === undefined)  )
+      setState( next );
+    else if( newSelector instanceof Object )
+      for( const key in newSelector ){
+        if( ! Object.is( (oldSelector as Record<any, unknown>)[key], (newSelector as Record<any, unknown>)[key] ) ) 
+          setState( next );
+        }
+    else if( ! Object.is ( newSelector, oldSelector) )
+      setState( next );
+  }
+
+const mounting = <T, S, Q, N>(fun : funObject<T, Q, N>, setState : React.Dispatch<React.SetStateAction<T>>, select?: ( state : T ) => S ) => {
+  const sst = select ? makeSelectDispatcher( select, setState ) : setState; 
+  (fun as any)[listeners]?.add( sst );
+  return () => (fun as any)[listeners]?.delete( sst );
 }
+
+export function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N>  ) : Readonly<[ T, Q & N ]>
+export function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N>, select: ( state : T ) => S  ) : Readonly<[ S, Q & N ]>
 
   /**
    * Hook that takes a funObject and returns a state and an actions object.  
@@ -81,15 +102,14 @@ const mounting = <T, Q, N>(fun : funObject<T, Q, N>, setState : React.Dispatch<R
    * The state is a value returned by the state function of the funObject.  
    * 
    * 
-   * @param {funObject<T, Q, N>} fun - The funObject with the state and actions.
-   * @returns {Readonly<[ T, Q & N ]>} - A Readonly array with the state and actions.
    */
-export function useFun<T, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N>  ) : Readonly<[ T, Q & N ]> {
+export function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N>, select?: ( state : T ) => S  ) : Readonly<[ T | S, Q & N ]> {
   const [stateFun, funActions] = useMemo( () => initFun( fun ), []);
   const [state, setState] = useState( stateFun );
 
-  useEffect( () => mounting( fun, setState ), [] );
+  useEffect( () => mounting( fun, setState, select ), [] );
 
-  return [ state, funActions ] as const
+  return [ select ? select( state ) : state, funActions ] as const
   
 }
+

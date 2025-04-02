@@ -148,11 +148,13 @@ function Reset() {
 
 ## Cancel a state update : cancelFun
 ```tsx
-cancelFun( returnValue )
+function cancelFun( returnValue )
   returns returnValue
 ```
 
-Since functions on setState collection always set an update, and state is a function that can construct an object or array every time it is called, a cancel state update signal can be set as the return value of a setState function through the cancelFun method. This can be useful to avoid unnecesary re-renders. If you need the function return value, you can set it as a parameter of cancelFun method.
+Since functions on setState collection always set an update, and state is a function that can construct an object or array every time it is called, a cancel state update signal can be set as the return value of a setState function through the cancelFun method. This can be useful to avoid unnecesary re-renders. If you need the function return value, you can set it as a parameter of cancelFun method. 
+
+**This does NOT UNDO the function's executed instructions.** You must cancel before change any (state) value.
 
 ```tsx
 import { cancelFun } from "use-fun";

@@ -46,8 +46,9 @@ export const cancelFun = <P>( returnValue? : P ) => ({
     returnValue
 }) as P;
 
-const enableSet = <T, Q extends Record<string, any>,N >( fun : funObject<T, Q, N> & { [listeners]? : Set<(next : T, prev : T) => void> }) => 
-  new Proxy( fun.setState , {
+const enableSet = <T, Q extends Record<string, any>,N >( fun : funObject<T, Q, N> & { [listeners]? : Set<(next : T, prev : T) => void> }) => {
+  fun[listeners] = new Set<(next : T, prev : T) => void>();
+  return new Proxy( fun.setState , {
     get(target: any, thisArg: any) {
       const func = target[thisArg];
       if( func instanceof Function )
@@ -61,10 +62,10 @@ const enableSet = <T, Q extends Record<string, any>,N >( fun : funObject<T, Q, N
       return func;
     }
   });
-
+}
 const initFun = <T, Q extends Record<string, any>, const N extends Record<string, any>>(fun : funObject<T, Q, N> & { [listeners]? : Set<(next : T, prev : T) => void> }) : Readonly<[ T, Q & N ]> => {
   if( !fun[listeners] ){
-    fun[listeners] = new Set<React.Dispatch<React.SetStateAction<T>>>();
+    
     fun.setState = enableSet( fun );
   }
   

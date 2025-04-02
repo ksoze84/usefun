@@ -1,6 +1,6 @@
 # use-Fun
 
-Simple hook and state manager for React.
+Simple hook and state manager for React using [**Fun**]ctions.
 
 
 ```jsx
@@ -23,9 +23,9 @@ function Counter() {
 ```
 
 KeyPoints: 
-* Work with [**Fun**]ctions that return an object with state and actions definitions.
-* The Fun result can be stored and shared between components.
-* Inside the setState sub-object, update a state variable just by setting it.  
+* Work with [**Fun**]ctions that return an object made of functions with state and actions definitions collection.
+* This Fun result can be stored and shared between components.
+* Inside the setState collection, update a state variable just by setting it.  
 * Heavy functions are not instantiated in every render. Minimize overhead by avoiding useCallback, useReducer, useMemo, and dependency arrays.
 * Minimal and simple code. Small footprint and low impact in React's cycles. ( ~ 1kB mini / ~ 500B gzip ).
 
@@ -40,7 +40,8 @@ This package is similar to [SoKore](https://github.com/ksoze84/sokore?tab=readme
 - [Basics](#basics)
   - [Installation](#installation)
   - [Rules](#rules)
-- [Sharing state example](#sharing-state-example)
+- [Storing and sharing](#storing-and-sharing)
+- [Cancel a state update : cancelFun](#cancel-a-state-update--cancelfun)
 
 
 ## Basics
@@ -53,9 +54,9 @@ npm add use-fun
 
 ### Rules
 
-* All functions in setState sub-object you define call a update state. If you want to define a "read only" function, declare it in the **noSet** sub-object
+* All functions you define in the setState collection call a state update. If you want to define a "read only" function, declare it in the **noSet** collection. If you need function that is not deterministic on set or not set the state, use the [cancelFun](#cancel-a-state-update--cancelfun) function. 
 * Values must change to trigger re-renders. You should create new objects or arrays if you want to change their properties or elements.
-* You can return anything in the state function, but arrays will mix up the types (union) for each element, so avoid arrays or use [ ... ] **as const** in Typescript.  
+* You can return anything in the state function, but arrays will mix up the types (union) of all the elements for each element, so **avoid arrays**, or use [ ... ] **as const** if you are using Typescript.  
 
 
 ```tsx
@@ -90,9 +91,8 @@ function Counter() {
 }
 ```
 
-## Sharing state example
+## Storing and sharing
 ```tsx
-
 function CounterFun() {
   let chairs = 0;
   let tables = 0;
@@ -133,5 +133,41 @@ function Tables() {
   </>
 }
 
+// You can also use the stored object directly. 
+// This will cause re-render on Chairs and Tables component,
+// but because is not a hook, will not cause a re-render on the Reset component
+function Reset() {
+  const {resetAll} = counterFun.setState;
 
+  return <button type="button"  onClick={resetAll}>RESET!</button>
+}
+```
+
+
+
+
+## Cancel a state update : cancelFun
+```tsx
+cancelFun( returnValue )
+  returns returnValue
+```
+
+Since functions on setState collection always set an update, and state is a function that can construct an object or array every time it is called, a cancel state update signal can be set as the return value of a setState function through the cancelFun method. This can be useful to avoid unnecesary re-renders. If you need the function return value, you can set it as a parameter of cancelFun method.
+
+```tsx
+import { cancelFun } from "use-fun";
+
+function chairsCount() {
+  let chairs = 0;
+  let tables = 0;
+
+  return {
+    state : () => ({chairs, tables}),
+    setState : {
+      addChairs: () => chairs >= 10 ? cancelFun() : chairs = chairs + 1,
+      subtractChairs: () => chairs <= 0 ? cancelFun() : chairs = chairs - 1,
+      ...
+    }
+  }
+}
 ```

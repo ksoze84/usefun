@@ -24,39 +24,68 @@ SOFTWARE.
 
 import React, { useEffect, useMemo, useState } from "react";
 
-type funObject<T, Q, N> = {
+export type funObject<T, Q, N> = {
   state : () => T,
   setState : Q,
   noSet? : N
 }
 
 const listeners = Symbol("listeners");
+const cancel = Symbol("cancel");
 
-const initFun = <T, Q extends Record<string, any>, const N extends Record<string, any>>(fun : funObject<T, Q, N>) : Readonly<[ T, Q & N ]> => {
-  if( !(fun as any)[listeners] ){
-    (fun as any)[listeners] = new Set<React.Dispatch<React.SetStateAction<T>>>();
-    fun.setState = new Proxy( fun.setState, {
-      get(target: any, thisArg: any) {
-        return function(...argumentsList: any[]) {
-          const res = target[thisArg](...argumentsList);
-          (fun as any)[listeners]?.forEach( (l : React.Dispatch<React.SetStateAction<T>>) => l( fun.state() ) );
-          return res
+/**
+ * Return a signal to cancel a state update.
+ * 
+ * Useful for functions that should not update the state.
+ * 
+ * @param {P} [returnValue] - Value to return when state update is canceled.
+ * @returns {Object} - Object with property [cancel] set to true and property returnValue with the given value.
+ */
+export const cancelFun = <P>( returnValue? : P ) => ({
+    [cancel] : true,
+    returnValue
+});
+
+const enableSet = <T, Q extends Record<string, any>,N >( fun : funObject<T, Q, N> & { [listeners]? : Set<React.Dispatch<React.SetStateAction<T>>> }) => 
+  new Proxy( fun.setState , {
+    get(target: any, thisArg: any) {
+      const func = target[thisArg];
+      if( func instanceof Function )
+        return (...argumentsList: Parameters<typeof func>) => {
+          const res = func(...argumentsList);
+          if(res?.[cancel]) return res?.returnValue;
+          fun[listeners]?.forEach( (l : React.Dispatch<React.SetStateAction<T>>) => l( fun.state() ) );
+          return res;
         }
-      }
-    });
+      return func;
+    }
+  });
+
+const initFun = <T, Q extends Record<string, any>, const N extends Record<string, any>>(fun : funObject<T, Q, N> & { [listeners]? : Set<React.Dispatch<React.SetStateAction<T>>> }) : Readonly<[ T, Q & N ]> => {
+  if( !fun[listeners] ){
+    fun[listeners] = new Set<React.Dispatch<React.SetStateAction<T>>>();
+    fun.setState = enableSet( fun );
   }
   
   return [fun.state(), { ...fun.noSet, ...fun.setState } as Q & N ]
 } 
-
 
 const mounting = <T, Q, N>(fun : funObject<T, Q, N>, setState : React.Dispatch<React.SetStateAction<T>>) => {
   (fun as any)[listeners]?.add( setState );
   return () => (fun as any)[listeners]?.delete( setState );
 }
 
+  /**
+   * Hook that takes a funObject and returns a state and an actions object.  
+   * 
+   * The state is a value returned by the state function of the funObject.  
+   * 
+   * 
+   * @param {funObject<T, Q, N>} fun - The funObject with the state and actions.
+   * @returns {Readonly<[ T, Q & N ]>} - A Readonly array with the state and actions.
+   */
 export function useFun<T, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N>  ) : Readonly<[ T, Q & N ]> {
-  const [stateFun, funActions] = useMemo( () => initFun( fun ) , [] );
+  const [stateFun, funActions] = useMemo( () => initFun( fun ), []);
   const [state, setState] = useState( stateFun );
 
   useEffect( () => mounting( fun, setState ), [] );

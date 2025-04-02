@@ -1,6 +1,6 @@
 {
   "name": "use-fun",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Simple hook and state manager for React.",
   "main": "lib/main.js",
   "module": "lib/main.esm.js",

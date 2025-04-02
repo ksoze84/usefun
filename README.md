@@ -109,7 +109,7 @@ function CounterFun() {
   }
 }
 
-// storing the Fun object
+// Storing the Fun object ---------------->
 const counterFun = CounterFun();
 
 function Chairs() {

@@ -29,7 +29,7 @@ KeyPoints:
 * Heavy functions are not instantiated in every render. Minimize overhead by avoiding useCallback, useReducer, useMemo, and dependency arrays.
 * Minimal and simple code. Small footprint and low impact in React's cycles. ( ~ 1kB mini / ~ 500B gzip ).
 
-This readme [looks better in gitHub](https://github.com/ksoze84/usefun?tab=readme-ov-file#sokore)
+This readme [looks better in gitHub](https://github.com/ksoze84/usefun?tab=readme-ov-file#use-fun)
 
 This package is similar to [SoKore](https://github.com/ksoze84/sokore?tab=readme-ov-file#sokore)
 

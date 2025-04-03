@@ -74,10 +74,10 @@ const counterLog = ( ) => {
     setState : {
       add: () => {
         count ++;
-        log = ["Adds 1 => " + count.toString(), ...log] },
+        log = ["Adds 1 : " + count.toString(), ...log] },
       subtract: () => {
         count --;
-        log = ["subtracts 1 => " + count.toString(), ...log] } },
+        log = ["Subtracts 1 : " + count.toString(), ...log] } },
     noSet:{
       getLastLog: () => log[ log.length - 1 ] }
   }
@@ -200,8 +200,8 @@ function detailsFun () {
     load : ()  => {
       isLoading = true ;
       fetch('/api/details').then(r => r.json())
-        .then(r => setState.setData(data = r?.data ?? []) )  
-                // ^
+        .then(r => setState.setData( r?.data ?? [] ))  
+        //         ^        ^
     }
   }
 

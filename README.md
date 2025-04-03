@@ -45,6 +45,7 @@ This package is similar to [SoKore](https://github.com/ksoze84/sokore?tab=readme
 - [Async functions](#async-functions)
 - [Selector](#selector)
 - [Initialization](#initialization)
+- [Using a store outside react](#using-a-store-outside-react)
 
 
 ## Basics
@@ -260,7 +261,6 @@ const counter = ( count ) => ({
 function Counter() {
   const [count, {add, subtract}] = useFun( () => counter(0) );
   ...
-}
 ```
 ```tsx
 const counter = ( count = 0 ) => ({ 
@@ -273,7 +273,6 @@ const counter = ( count = 0 ) => ({
 function Counter() {
   const [count, {add, subtract}] = useFun( counter );
     ...
-}
 ```
 
 ```tsx
@@ -290,7 +289,6 @@ const counter = ( ) => {
 function Counter() {
   const [count, {add, subtract}] = useFun( counter );
     ...
-}
 ```
 
 ```tsx
@@ -311,7 +309,6 @@ const countStore = counter(0);
 function Counter() {
   const [count, {add, subtract}] = useFun( countStore );
     ...
-}
 ```
 ```tsx
 // WARNING
@@ -326,5 +323,21 @@ function Counter() {
   // This will create a new Fun collection every render.
   const [count, {add, subtract}] = useFun( counter(0) ); 
   ...
+```
+
+## Using a store outside react
+This is an example with a loader like Remix data loaders.
+
+```tsx
+// Storing the detailsFun collection from previous example. 
+const details = detailsFun();
+
+export function loader = (  ) => {
+  details.setState.load();
+  return null;
 }
+
+export default function App() {
+  const [[dets, isLoading]] = useFun( details );
+  ...
 ```

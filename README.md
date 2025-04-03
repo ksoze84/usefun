@@ -116,7 +116,7 @@ function counterFun() {
 }
 
 // Storing the Fun object ---------------->
-const CounterFun = CounterFun();
+const CounterFun = counterFun();
 
 function Chairs() {
   const [{chairs}, {addChairs, subtractChairs}] = useFun( CounterFun );
@@ -134,8 +134,8 @@ function Tables() {
 
   return <>
     <span>Tables: {tables} </span>
-    <button  onClick={addTables}>+</button>
-    <button  onClick={subtractTables}>-</button>
+    <button onClick={addTables}>+</button>
+    <button onClick={subtractTables}>-</button>
   </>
 }
 

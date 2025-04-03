@@ -16,8 +16,8 @@ function Counter() {
   const [count, {add, subtract}] = useFun( () => counter(0) );
   return <>
     <span>{count}</span>
-    <button type="button" onClick={add}>+</button>
-    <button type="button" onClick={subtract}>-</button>
+    <button onClick={add}>+</button>
+    <button onClick={subtract}>-</button>
   </>
 }
 ```
@@ -88,8 +88,8 @@ function Counter() {
   const [[count, log], {add, subtract, getLastLog}] = useFun( () => counterLog() );
   return <>
     <span>{count}</span>
-    <button type="button" onClick={add}>+</button>
-    <button type="button" onClick={subtract}>-</button>
+    <button onClick={add}>+</button>
+    <button onClick={subtract}>-</button>
     <ul>
       {log.map( (l, i) => <li key={i}>{l}</li> )}
     </ul>
@@ -123,8 +123,8 @@ function Chairs() {
 
   return <>
     <span>Chairs: {chairs}</span>
-    <button type="button" onClick={addChairs}>+</button>
-    <button type="button" onClick={subtractChairs}>-</button>
+    <button onClick={addChairs}>+</button>
+    <button onClick={subtractChairs}>-</button>
   </> 
 }
 
@@ -134,8 +134,8 @@ function Tables() {
 
   return <>
     <span>Tables: {tables} </span>
-    <button type="button"  onClick={addTables}>+</button>
-    <button type="button"  onClick={subtractTables}>-</button>
+    <button  onClick={addTables}>+</button>
+    <button  onClick={subtractTables}>-</button>
   </>
 }
 
@@ -145,7 +145,7 @@ function Tables() {
 function Reset() {
   const {resetAll} = CounterFun.setState;
 
-  return <button type="button"  onClick={resetAll}>RESET!</button>
+  return <button  onClick={resetAll}>RESET!</button>
 }
 ```
 

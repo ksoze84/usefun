@@ -70,7 +70,8 @@ const counterLog = ( ) => {
   let log : string[] = [];
 
   return {
-    state : () => [count, log] as const,
+    state : 
+      () => [count, log] as const,
     setState : {
       add: () => {
         count ++;
@@ -84,7 +85,7 @@ const counterLog = ( ) => {
 }
 
 function Counter() {
-  const [[count, log], {add, subtract}] = useFun( () => counterLog() );
+  const [[count, log], {add, subtract, getLastLog}] = useFun( () => counterLog() );
   return <>
     <span>{count}</span>
     <button type="button" onClick={add}>+</button>

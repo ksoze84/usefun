@@ -102,17 +102,21 @@ const mounting = <T, S, Q, N>(fun : funObject<T, Q, N>, setState : React.Dispatc
 }
 
 
-
+/**
+ * Hook that takes a funObject and returns a state and an actions object.  
+ * 
+ * The state is a value returned by the state function of the funObject.  
+ */
 export function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N> | ( () => funObject<T, Q, N> ) ) : Readonly<[ T, Q & N ]>
+/**
+ * Hook that takes a funObject and optionally a selector and returns a state and an actions object.  
+ * 
+ * The state is a value returned by the state function [selector applied] of the funObject.  
+ */
 export function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N> | ( () => funObject<T, Q, N> ), select: ( state : T ) => S  ) : Readonly<[ S, Q & N ]>
 
-  /**
-   * Hook that takes a funObject and returns a state and an actions object.  
-   * 
-   * The state is a value returned by the state function of the funObject.  
-   * 
-   * 
-   */
+
+
 export function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>( funT : funObject<T, Q, N> | ( () => funObject<T, Q, N> ), select?: ( state : T ) => S  ) : Readonly<[ T | S, Q & N ]> {
   let [ state, setState ] = useState<T|S>( )
   if( ! (setState as any)[Fn] )

@@ -12,5 +12,5 @@ export type funObject<T, Q, N> = {
  *
  */
 export declare const cancelFun: <P>(returnValue?: P) => P;
-export declare function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>(fun: funObject<T, Q, N>): Readonly<[T, Q & N]>;
-export declare function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>(fun: funObject<T, Q, N>, select: (state: T) => S): Readonly<[S, Q & N]>;
+export declare function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>(fun: funObject<T, Q, N> | (() => funObject<T, Q, N>)): Readonly<[T, Q & N]>;
+export declare function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>(fun: funObject<T, Q, N> | (() => funObject<T, Q, N>), select: (state: T) => S): Readonly<[S, Q & N]>;

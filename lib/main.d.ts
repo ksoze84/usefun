@@ -1,7 +1,7 @@
 export type funObject<T, Q, N> = {
-    state: () => T;
-    setState: Q;
-    noSet?: N;
+    get: () => T;
+    set: Q;
+    read?: N;
 };
 /**
  * Return signal to cancel a state update.

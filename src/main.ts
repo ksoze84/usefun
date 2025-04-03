@@ -22,18 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 export type funObject<T, Q, N> = {
-  state : () => T,
-  setState : Q,
-  noSet? : N
+  get : () => T,
+  set : Q,
+  read? : N
 }
 
 const listeners = Symbol("listeners");
 const cancel = Symbol("cancel");
-const Fn = Symbol("Fn");
-const sSet = Symbol("sSet");
 
 /**
  * Return signal to cancel a state update.
@@ -50,16 +48,16 @@ export const cancelFun = <P>( returnValue? : P ) => ({
 
 const enableSet = <T, Q extends Record<string, any>,N >( fun : funObject<T, Q, N> & { [listeners]? : Set<(next : T, prev : T) => void> }) => {
   fun[listeners] = new Set<(next : T, prev : T) => void>();
-  Object.getOwnPropertyNames( fun.setState ).forEach( key => {
-    if( fun.setState[key] instanceof Function ){
-      const func = fun.setState[key];
-      (fun.setState as any)[key] = async (...args : unknown[]) => {
-        const old = fun.state();
+  Object.getOwnPropertyNames( fun.set ).forEach( key => {
+    if( fun.set[key] instanceof Function ){
+      const func = fun.set[key];
+      (fun.set as any)[key] = async (...args : unknown[]) => {
+        const old = fun.get();
           let res = func(...args);
           if ( res instanceof Promise)
             res = await res;
           if(res?.[cancel]) return res?.returnValue;
-          fun[listeners]?.forEach( l => l( fun.state(), old ) );
+          fun[listeners]?.forEach( l => l( fun.get(), old ) );
           return res;
       }
     }
@@ -70,11 +68,9 @@ const enableSet = <T, Q extends Record<string, any>,N >( fun : funObject<T, Q, N
  * Store a Fun object. This function is useful when you want to share the same Fun object between components.
  * 
  */
-const init = <T, S, Q extends Record<string, any>, N extends Record<string, any>>( fun : funObject<T, Q, N> & { [listeners]? : Set<(next : T, prev : T) => void> }, setState : React.Dispatch<React.SetStateAction<T>>, select?: ( state : T ) => S ) : T | S => {
+const init = <T, S, Q extends Record<string, any>, N extends Record<string, any>>( fun : funObject<T, Q, N> & { [listeners]? : Set<(next : T, prev : T) => void> }, select?: ( state : T ) => S ) : [T | S, funObject<T, Q, N> ,Q & N ]=> {
   if(!fun[listeners]) enableSet( fun );
-  (setState as any)[Fn] = fun;
-  (setState as any)[sSet] = {...fun.noSet, ...fun.setState} as Q & N;
-  return select ? select( fun.state() ) : fun.state();
+  return [select ? select( fun.get() ) : fun.get(), fun, {...fun.read, ...fun.set} as Q & N]
 }
 
 const change = ( a : any, b : any ) : true | void => {
@@ -116,13 +112,11 @@ export function useFun<T, S, const Q extends Record<string, any>, const N extend
 export function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N> | ( () => funObject<T, Q, N> ), select: ( state : T ) => S  ) : Readonly<[ S, Q & N ]>
 
 
-
 export function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>( funT : funObject<T, Q, N> | ( () => funObject<T, Q, N> ), select?: ( state : T ) => S  ) : Readonly<[ T | S, Q & N ]> {
-  let [ state, setState ] = useState<T|S>( )
-  if( ! (setState as any)[Fn] )
-    state = init(funT instanceof Function ? funT() : funT, setState as React.Dispatch<React.SetStateAction<T>>, select );
+  const [ initialState, fun, set ] = useMemo( () => init( funT instanceof Function ? funT() : funT, select ), [] );
+  const [ state, setState ] = useState<T|S>( initialState )
 
-  useEffect( () => mounting( (setState as any)[Fn], setState as React.Dispatch<React.SetStateAction<T|S>>, select ), [] );
+  useEffect( () => mounting( fun, setState, select ), [] );
 
-  return [ state as T | S, (setState as any)[sSet] ] as const
+  return [ state, set ] as const
 }

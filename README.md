@@ -5,8 +5,8 @@ Simple hook and state manager for React using [**Fun**]ctions.
 
 ```jsx
 const counter = ( count ) => ({ 
-  state: () => count,
-  setState: {
+  get: () => count,
+  set: {
     add: () => count++,
     subtract: () => count--
   }
@@ -25,7 +25,7 @@ function Counter() {
 KeyPoints: 
 * Work with functions that return a Fun collection.
 * This collection can be stored and shared between components.
-* Inside the Fun.setState collection, update a state variable just by assigning it.  
+* Inside the Fun.set collection, update a state variable just by assigning it.  
 * Heavy functions are not instantiated in every render. Minimize overhead by avoiding useCallback, useReducer, useMemo, and dependency arrays.
 * Minimal and simple code. Small footprint and low impact in React's cycles. ( ~ 1kB mini / ~ 500B gzip ).
 
@@ -58,7 +58,7 @@ npm add use-fun
 
 ### Rules
 
-* All functions you define in the Fun.setState collection call a state update. If you want to define a "read only" function, declare it in the **Fun.noSet** collection. If you need a function that is not deterministic on set or not set the state, use the [cancelFun](#cancel-a-state-update--cancelfun) function. 
+* All functions you define in the Fun.set collection call a state update. If you want to define a "read only" function, declare it in the **Fun.noSet** collection. If you need a function that is not deterministic on set or not set the state, use the [cancelFun](#cancel-a-state-update--cancelfun) function. 
 * Values must change to trigger re-renders. You should create new objects or arrays if you want to change their properties or elements.
 * You can return anything in the state function, but arrays will mix up the types (union) of all the elements for each element, so **avoid arrays**, or use [ ... ] **as const** if you are using Typescript.  
 * Keep in mind that Fun.useState collection is mutated when hit a hook, changing its functions to call an update after its execution. 
@@ -72,7 +72,7 @@ const counterLog = ( ) => {
   return {
     state : 
       () => [count, log] as const,
-    setState : {
+    set : {
       add: () => {
         count ++;
         log = ["Adds 1 : " + count.toString(), ...log] },
@@ -105,7 +105,7 @@ function counterFun() {
 
   return {
     state : () => ({chairs, tables}),
-    setState : {
+    set : {
       addChairs: () => chairs++,
       subtractChairs: () => chairs--,
       addTables: () => tables++,
@@ -143,7 +143,7 @@ function Tables() {
 // This will cause re-render on Chairs and Tables component,
 // but because is not a hook, will not cause a re-render on the Reset component
 function Reset() {
-  const {resetAll} = CounterFun.setState;
+  const {resetAll} = CounterFun.set;
 
   return <button  onClick={resetAll}>RESET!</button>
 }
@@ -158,7 +158,7 @@ function cancelFun( returnValue )
   returns returnValue
 ```
 
-Since functions on setState collection always set an update, and state is a function that can construct an object or array every time it is called, a cancel state update signal can be set as the return value of a setState function through the cancelFun method. This can be useful to avoid unnecessary re-renders. If you need the function return value, you can set it as a parameter of cancelFun method. 
+Since functions on set collection always set an update, and state is a function that can construct an object or array every time it is called, a cancel state update signal can be set as the return value of a set function through the cancelFun method. This can be useful to avoid unnecessary re-renders. If you need the function return value, you can set it as a parameter of cancelFun method. 
 
 **This does NOT UNDO the function's executed instructions.** You must cancel before change any (state) value.
 
@@ -171,7 +171,7 @@ function chairsCount() {
 
   return {
     state : () => ({chairs, tables}),
-    setState : {
+    set : {
       addChairs: () => chairs >= 10 ? cancelFun() : chairs = chairs + 1,
       subtractChairs: () => chairs <= 0 ? cancelFun() : chairs = chairs - 1
     }
@@ -183,7 +183,7 @@ function chairsCount() {
 
 You can return promises from your actions, and the state will be updated on resolve. Or you can call a promise without returning it, and the state will be updated immediately. Either case will work independently without problem.
 
-But what if you want to update in call **and** in resolve?. This can be solved by referencing functions from the setState collection itself:
+But what if you want to update in call **and** in resolve?. This can be solved by referencing functions from the set collection itself:
 ```tsx
 function detailsFun () {
   let data : any[] = [];
@@ -191,7 +191,7 @@ function detailsFun () {
 
   const state = () => [data, isLoading] as const
 
-  const setState = {
+  const set = {
     //calling this function on load resolve
     setData : (d : any[]) => { 
       isLoading = false; 
@@ -201,22 +201,22 @@ function detailsFun () {
     load : ()  => {
       isLoading = true ;
       fetch('/api/details').then(r => r.json())
-        .then(r => setState.setData( r?.data ?? [] ))  
+        .then(r => set.setData( r?.data ?? [] ))  
         //         ^        ^
     }
   }
 
-  return { state, setState }
+  return { state, set }
 }
 
 ```
 
 This will **NOT WORK** as expected:
 ```tsx
-const setState = {
+const set = {
 
     // Here, a Promise is returned, so update will be called when it resolves,
-    // loading the data successfully ( without a self referencing setState method ), 
+    // loading the data successfully ( without a self referencing set method ), 
     // but leaving [ isLoading = true; ] without effect.
     badInitLoad : ()  => {
       isLoading = true ;
@@ -253,7 +253,7 @@ The useFun can accept an Fun collection or a function that returns it. The Fun a
 ```tsx
 const counter = ( count ) => ({ 
   state: () => count,
-  setState: {
+  set: {
     add: () => count++,
     sub: () => count--  };
 });
@@ -265,7 +265,7 @@ function Counter() {
 ```tsx
 const counter = ( count = 0 ) => ({ 
   state: () => count,
-  setState: {
+  set: {
     add: () => count++,
     sub: () => count--  };
 })
@@ -280,7 +280,7 @@ const counter = ( ) => {
   let count = 0;
   return {
     state: () => count,
-    setState: {
+    set: {
       add: () => count++,
       sub: () => count--  };
   }
@@ -297,11 +297,11 @@ const counter = ( initValue ) => {
 
   const state = () => count;
 
-  const setState = {
+  const set = {
       add: () => count++,
       sub: () => count--  };
 
-  return { state, setState }
+  return { state, set }
 }
 
 const countStore = counter(0);
@@ -314,7 +314,7 @@ function Counter() {
 // WARNING
 const counter = ( count ) => ({ 
   state: () => count,
-  setState: {
+  set: {
     add: () => count++,
     sub: () => count--  };
 });
@@ -333,11 +333,11 @@ This is an example with a loader like Remix data loaders.
 const details = detailsFun();
 
 export function loader = (  ) => {
-  details.setState.load();
+  details.set.load();
   return null;
 }
 
 export default function App() {
-  const [[dets, isLoading]] = useFun( details );
+  const [[dets, isLoading], {setData, load}] = useFun( details );
   ...
 ```

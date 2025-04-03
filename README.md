@@ -172,8 +172,7 @@ function chairsCount() {
     state : () => ({chairs, tables}),
     setState : {
       addChairs: () => chairs >= 10 ? cancelFun() : chairs = chairs + 1,
-      subtractChairs: () => chairs <= 0 ? cancelFun() : chairs = chairs - 1,
-      ...
+      subtractChairs: () => chairs <= 0 ? cancelFun() : chairs = chairs - 1
     }
   }
 }
@@ -183,7 +182,7 @@ function chairsCount() {
 
 You can return promises from your actions, and the state will be updated on resolve. Or you can call a promise without returning it, and the state will be updated immediately. Either case will work independently without problem.
 
-But what if you want to update in call and in resolve?. This can be solved by referencing functions from the setState collection itself:
+But what if you want to update in call **and** in resolve?. This can be solved by referencing functions from the setState collection itself:
 ```tsx
 function detailsFun () {
   let data : any[] = [];
@@ -192,7 +191,7 @@ function detailsFun () {
   const state = () => [data, isLoading] as const
 
   const setState = {
-
+    //calling this function on load resolve
     setData : (d : any[]) => { 
       isLoading = false; 
       data = d 

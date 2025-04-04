@@ -4,13 +4,11 @@ Simple hook and state manager for React using [**Fun**]ctions.
 
 
 ```jsx
-const counter = ( count ) => ({ 
-  get: () => count,
-  set: {
+const counter = ( count ) => 
+  fun({ () => count, {
     add: () => count++,
     subtract: () => count--
-  }
-})
+  }})
 
 function Counter() {
   const [count, {add, subtract}] = useFun( () => counter(0) );

@@ -24,90 +24,72 @@ SOFTWARE.
 
 import React, { useEffect, useMemo, useState } from "react";
 
-const getSt = Symbol('getState');
 const listeners = Symbol("listeners");
+const cancel = Symbol("cancel");
 
-export type UpdateFun = <P>( returnValue? : P ) => (P | void);
-
-export type funObject<T, Q, N> = {
-  [listeners] : Set<(next : T, prev : T) => void>;
-  [getSt] : () => T;
-} & N & Q
-
-type preFunObject<T> = {
-  [listeners]? : Set<(next : T, prev : T) => void>
-  [getSt]? : () => T
-
+type FunObj<T> = {
+  state : () => T;
+  [listeners]? : Set<(next : T, prev : T) => void>;
 }
 
-type funAB<Q> = Q |  ( (up : UpdateFun) => Q ) 
-
-type funObj<T, Q> = {
-  [listeners] : Set<(next : T, prev : T) => void>;
-  [getSt] : () => T;
-} & Q
-
-
-const dispatch = <T>( next : T, prev: T, listeners : Set<(next : T, prev : T) => void> ) =>
-  listeners.forEach( l => l( next, prev ) );
-
-interface Fun {
-  <T, Q extends Record<string, any>, N extends Record<string, any>>( fn : () => T, funA : funAB<Q>, funB : funAB<N> ) : funObject<T, Q, N>
-  <T, Q extends Record<string, any>>( fn : () => T, funA : funAB<Q> ) : funObj<T, Q>
-}
-
-export const fun : Fun = <T, Q extends Record<string, any>, N extends Record<string, any>>( fn : () => T, funA : funAB<Q>, funB? : funAB<N> ) => {
-  let prev = fn();
-
-  const fun : preFunObject<T> = {
-    [getSt] : fn,
-    [listeners] : new Set<(next : T, prev : T) => void>()
-
-  }
-
-  const set : UpdateFun = ( returnValue? ) => {
-    const next = fn();
-    dispatch( next, prev, fun[listeners]! );
-    prev = next;
-    if ( returnValue )
-      return returnValue;
-    return void 0;
-  }
-
-  const mutate = ( obj : Record<string, any> ) => {
-    Object.getOwnPropertyNames( obj ).forEach( key => {
-      if( obj[key] instanceof Function ){
-        const func = obj[key];
-        (obj as any)[key] = (...args : any[]) => {
-          const res = func(...args);
-          const next = fn(); 
-          dispatch( next, prev, fun[listeners]! );
-          prev = next;
-          return res;
-        }
-      }
-    })
-    return obj;  }
-
-  Object.assign( fun, funA instanceof Function ? funA( set ) : mutate( funA ) );
-
-  if( funB )
-    Object.assign( fun, funB instanceof Function ? funB( set ) : mutate( funB ) );
-
-  return fun as funObject<T, Q, N>;
-  
-}
-
-
+type FunObject<T, Q extends Record<string, any>> = FunObj<T> & Q;
 
 
 /**
- * Store a Fun object. This function is useful when you want to share the same Fun object between components.
+ * Return signal to cancel a state update.
+ * 
+ * This does NOT UNDO the function's executed instructions.
  * 
  */
-const init = <T, S, Q extends Record<string, any>, N extends Record<string, any>>( funT : funObject<T, Q, N> | (() => funObject<T, Q, N>), select?: ( state : T ) => S ) : [T | S, funObject<T, Q, N>  ]=> {
-  const fun = funT instanceof Function ? funT() : funT
-  return [select ? select( fun[getSt]() ) : fun[getSt](), fun]
+export const noSet = <P>( returnValue? : P ) => ({
+  [cancel] : true,
+  returnValue
+}) as P;
+
+const dispatch = <T>( next : T, prev: T, listeners? : Set<(next : T, prev : T) => void> ) =>
+  listeners?.forEach( l => l( next, prev ) );
+
+export const fun = <T, Q extends Record<string, any>>( funObj : FunObject<T, Q> ) : FunObject<T, Q> => {
+  let prev = funObj.state();
+
+  funObj[listeners] = new Set<(next : T, prev : T) => void>();
+
+  const handlePromise = ( promise : Promise<any>  ) => {
+    promise.then( () => {
+      const next = funObj.state();
+      if ( change( prev, next ) ){
+        dispatch( next, prev, funObj[listeners] );
+        prev = next;
+      }
+    })
+  };
+
+  Object.getOwnPropertyNames( funObj ).forEach( key => {
+    if( funObj[key] instanceof Function && key !== "state" && !key.endsWith('_') ){
+      const func = funObj[key];
+      (funObj as any)[key] = (...args : any[]) => {
+        const res = func(...args);
+        const next = funObj.state();
+        if( res instanceof Promise ){
+          handlePromise(res);
+          if ( !change( prev, next ) )
+              return res;
+        }
+        if(res?.[cancel]) return res?.returnValue;
+        dispatch( next, prev, funObj[listeners] );
+        prev = next;
+        return res;
+      }
+    }
+  })
+
+  return funObj;
+}
+
+
+const init = <T, S>( funT : FunObj<T> | (() => FunObj<T>), select?: ( state : T ) => S ) : [T | S, FunObj<T> ]=> {
+  const fun = funT instanceof Function ? funT() : funT;
+  return [select ? select( fun.state() ) : fun.state(), fun]
 }
 
 const change = ( a : any, b : any ) : true | void => {
@@ -124,11 +106,11 @@ const makeSelectDispatcher = <T, S>( select : ( state : T ) => S, setState : Rea
   (next : T, prev: T) => {
     const oldSelector = select( prev );  
     const newSelector = select( next );
-    if( (newSelector === undefined) !== (oldSelector === undefined) || change( newSelector, oldSelector ) )
+    if( change( newSelector, oldSelector ) )
       setState( newSelector );
   }
 
-const mounting = <T, S, Q, N>(fun : funObject<T, Q, N>, setState : React.Dispatch<React.SetStateAction<T|S>>, select?: ( state : T ) => S ) => {
+const mounting = <T, S>(fun : FunObj<T>, setState : React.Dispatch<React.SetStateAction<T|S>>, select?: ( state : T ) => S ) => {
   const sst = select ? makeSelectDispatcher( select, setState ) : setState; 
   (fun as any)[listeners]?.add( sst );
   return () => (fun as any)[listeners]?.delete( sst );
@@ -140,30 +122,17 @@ const mounting = <T, S, Q, N>(fun : funObject<T, Q, N>, setState : React.Dispatc
  * 
  * The state is a value returned by the state function of the funObject.  
  */
-export function useFun<T, const Q extends Record<string, any>>( fun : funObj<T, Q> | ( () => funObj<T, Q> ) ) : Readonly<[ T, Q ]>
+export function useFun<T, Q extends Record<string, any>>( fun : FunObject<T, Q> | ( () => FunObject<T, Q> ) ) : Readonly<[ T, Omit<Q, 'state'> ]>
 
 /**
  * Hook that takes a funObject and optionally a selector and returns a state and an actions object.  
  * 
  * The state is a value returned by the state function [selector applied] of the funObject.  
  */
-export function useFun<T, S, const Q extends Record<string, any>>( fun : funObj<T, Q> | ( () => funObj<T, Q> ), select: ( state : T ) => S  ) : Readonly<[ S, Q ]>
-
-/**
- * Hook that takes a funObject and returns a state and an actions object.  
- * 
- * The state is a value returned by the state function of the funObject.  
- */
-export function useFun<T, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N> | ( () => funObject<T, Q, N> ) ) : Readonly<[ T, Q & N ]>
-/**
- * Hook that takes a funObject and optionally a selector and returns a state and an actions object.  
- * 
- * The state is a value returned by the state function [selector applied] of the funObject.  
- */
-export function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>( fun : funObject<T, Q, N> | ( () => funObject<T, Q, N> ), select: ( state : T ) => S  ) : Readonly<[ S, Q & N ]>
+export function useFun<T, S, Q extends Record<string, any>>( fun : FunObject<T, Q> | ( () => FunObject<T, Q> ), select: ( state : T ) => S  ) : Readonly<[ S, Omit<Q, 'state'> ]>
 
 
-export function useFun<T, S, const Q extends Record<string, any>, const N extends Record<string, any>>( funT : funObject<T, Q, N> | ( () => funObject<T, Q, N> ), select?: ( state : T ) => S  ) : Readonly<[ T | S, Q & N ]> {
+export function useFun<T, S>( funT : FunObj<T> | ( () => FunObj<T> ), select?: ( state : T ) => S  ) : Readonly<[ T | S, FunObj<T> ]> {
   const [ initialState, fun ] = useMemo( () => init( funT, select ), [] );
   const [ state, setState ] = useState<T|S>( initialState )
 

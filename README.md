@@ -59,7 +59,7 @@ npm add use-fun
 * All actions you define in the collection call a state update at end. If you want to define a "read only" function, its name must end with underscore. If you need a action that is not deterministic on set or not set the state, use the [noUp](#cancel-a-state-update--noup) function. 
 * Values must change to trigger re-renders. You should create new objects or arrays if you want to change their properties or elements.
 * You can return anything in the state function, but arrays will mix up the types (union) of all the elements for each element, so **avoid arrays**, or use [ ... ] **as const** if you are using Typescript.  
-* Keep in mind that a Fun collection mutates when it reaches a hook or is initialized with the fun() method, trapping its function calls, binding them, and calling an update after they execute.
+* Keep in mind that a Fun collection is enabled when it reaches a hook or by calling the fun() method on it. This mutates the object for trapping its function calls, binding them to the collection, and calling an update after they execute.
 
 
 ```tsx
@@ -226,8 +226,7 @@ const fun = {
     isLoading = true ;
     return fetch('/api/item').then(r => r.json())
       .then(i => { 
-        // this data assign will not update the state. 
-        // This change will be visible when details resolve.
+        // This data assign will be visible when details resolve.
         data = i ; 
         return fetch(`/api/details/${data.foo}`).then(r => r.json())
           .then( d => { details = d; isLoading = false }  )
@@ -250,7 +249,7 @@ const fun = {
   },
 
   // If you don't return the promise, 
-  // an update will be triggered inmediately. As in commmon actions.
+  // an update will be triggered inmediately. As in common actions.
   // In this case a re-render will be triggered before the promise resolves, 
   // even if no changes to state data is made.
   // When the promise is resolved nothing will happen on render. 
@@ -362,7 +361,7 @@ function Counter() {
 ```
 
 ## Using a stored Fun outside react
-If you plan to use a Fun store outside react, you should initialize the Fun collection beforehand with the **fun( collection )** method. This function returns the same object that is passed as parameter.
+If you plan to use a Fun store outside react, you should enable the Fun collection beforehand with the **fun( collection )** method. This function returns the same object that is passed as parameter.
 
 This example uses a loader, like in Remix framework.
 ```tsx

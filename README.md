@@ -56,7 +56,7 @@ npm add use-fun
 
 ### General Rules
 
-* All actions you define in the collection call a state update at end. If you want to define a "read only" function, its name must end with underscore. If you need a action that is not deterministic on set or not set the state, use the [noUp](#cancel-a-state-update--noup) function. 
+* All actions you define in the collection call a state update at end, **unless its name ends with underscore**. If you need a action that is not deterministic on set or not set the state, use the [noUp](#cancel-a-state-update--noup) function. 
 * Values must change to trigger re-renders. You should create new objects or arrays if you want to change their properties or elements.
 * You can return anything in the state function, but arrays will mix up the types (union) of all the elements for each element, so **avoid arrays**, or use [ ... ] **as const** if you are using Typescript.  
 * Keep in mind that a Fun collection is enabled when it reaches a hook or by calling the fun() method on it. This mutates the object for trapping its function calls, binding them to the collection, and calling an update after they execute.
@@ -150,7 +150,7 @@ function Reset() {
 
 ## Cancel a state update : noUp()
 ```tsx
-function cancelFun( returnValue )
+function noUp( returnValue )
   returns returnValue
 ```
 
@@ -206,7 +206,7 @@ return {
       .then(i => { 
         data = i ;
         this.loadDetails();
-        //OR: return fun.loadDetails();
+        //OR: return this.loadDetails();
       } )   
   },
   loadDetails : () => 

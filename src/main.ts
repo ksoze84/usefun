@@ -41,7 +41,7 @@ type FunObject<T, Q extends Record<string, any>> = FunObj<T> & Q;
  * This does NOT UNDO the function's executed instructions.
  * 
  */
-export const noSet = <P>( returnValue? : P ) => ({
+export const noUp = <P>( returnValue? : P ) => ({
   [cancel] : true,
   returnValue
 }) as P;
@@ -87,9 +87,10 @@ export const fun = <T, Q extends Record<string, any>>( funObj : FunObject<T, Q> 
 }
 
 
-const init = <T, S>( funT : FunObj<T> | (() => FunObj<T>), select?: ( state : T ) => S ) : [T | S, FunObj<T> ]=> {
-  const fun = funT instanceof Function ? funT() : funT;
-  return [select ? select( fun.state() ) : fun.state(), fun]
+const init = <T, S, Q extends Record<string, any>>( funT : FunObject<T,Q> | (() => FunObject<T,Q>), select?: ( state : T ) => S ) : [T | S, FunObject<T, Q> ]=> {
+  const funObject = funT instanceof Function ? funT() : funT;
+  if( !funObject[listeners] ) fun(funObject);
+  return [select ? select( funObject.state() ) : funObject.state(), funObject]
 }
 
 const change = ( a : any, b : any ) : true | void => {
@@ -110,7 +111,7 @@ const makeSelectDispatcher = <T, S>( select : ( state : T ) => S, setState : Rea
       setState( newSelector );
   }
 
-const mounting = <T, S>(fun : FunObj<T>, setState : React.Dispatch<React.SetStateAction<T|S>>, select?: ( state : T ) => S ) => {
+const mounting = <T, S, Q extends Record<string, any>>(fun : FunObject<T, Q>, setState : React.Dispatch<React.SetStateAction<T|S>>, select?: ( state : T ) => S ) => {
   const sst = select ? makeSelectDispatcher( select, setState ) : setState; 
   (fun as any)[listeners]?.add( sst );
   return () => (fun as any)[listeners]?.delete( sst );
@@ -122,21 +123,24 @@ const mounting = <T, S>(fun : FunObj<T>, setState : React.Dispatch<React.SetStat
  * 
  * The state is a value returned by the state function of the funObject.  
  */
-export function useFun<T, Q extends Record<string, any>>( fun : FunObject<T, Q> | ( () => FunObject<T, Q> ) ) : Readonly<[ T, Omit<Q, 'state'> ]>
+export function useFun<T, Q extends Record<string, any>>( fun : FunObject<T, Q> ) : Readonly<[ T, Omit<Q, 'state'> ]>
+export function useFun<T, Q extends Record<string, any>>( fun : () => FunObject<T, Q> ) : Readonly<[ T, Omit<Q, 'state'> ]>
+
 
 /**
  * Hook that takes a funObject and optionally a selector and returns a state and an actions object.  
  * 
  * The state is a value returned by the state function [selector applied] of the funObject.  
  */
-export function useFun<T, S, Q extends Record<string, any>>( fun : FunObject<T, Q> | ( () => FunObject<T, Q> ), select: ( state : T ) => S  ) : Readonly<[ S, Omit<Q, 'state'> ]>
+export function useFun<T, S, Q extends Record<string, any>>( fun : FunObject<T, Q>, select: ( state : T ) => S  ) : Readonly<[ S, Omit<Q, 'state'> ]>
+export function useFun<T, S, Q extends Record<string, any>>( fun : () => FunObject<T, Q>, select: ( state : T ) => S  ) : Readonly<[ S, Omit<Q, 'state'> ]>
 
 
-export function useFun<T, S>( funT : FunObj<T> | ( () => FunObj<T> ), select?: ( state : T ) => S  ) : Readonly<[ T | S, FunObj<T> ]> {
+export function useFun<T, S, Q extends Record<string, any>>( funT : FunObject<T, Q> | ( () => FunObject<T, Q> ), select?: ( state : T ) => S  ) : Readonly<[ T | S, Q ]> {
   const [ initialState, fun ] = useMemo( () => init( funT, select ), [] );
   const [ state, setState ] = useState<T|S>( initialState )
 
   useEffect( () => mounting( fun, setState, select ), [] );
 
-  return [ state, fun ] as const
+  return [ state, fun as Q ] as const
 }

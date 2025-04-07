@@ -4,11 +4,11 @@ Simple hook and state manager for React using [**Fun**]ctions.
 
 
 ```jsx
-const counter = ( count ) => 
-  fun({ () => count, {
-    add: () => count++,
-    subtract: () => count--
-  }})
+const counter = ( count ) => { 
+  state : () => count, 
+  add: () => count++,
+  subtract: () => count--
+}
 
 function Counter() {
   const [count, {add, subtract}] = useFun( () => counter(0) );
@@ -21,9 +21,9 @@ function Counter() {
 ```
 
 KeyPoints: 
-* Work with functions that return a Fun collection.
+* Work with a "Fun" collection of actions functions.
 * This collection can be stored and shared between components.
-* Inside the Fun.set collection, update a state variable just by assigning it.  
+* Update a state variable just by assigning it.  
 * Heavy functions are not instantiated in every render. Minimize overhead by avoiding useCallback, useReducer, useMemo, and dependency arrays.
 * Minimal and simple code. Small footprint and low impact in React's cycles. ( ~ 1kB mini / ~ 500B gzip ).
 
@@ -37,10 +37,10 @@ This package is similar to [SoKore](https://github.com/ksoze84/sokore?tab=readme
 - [Table of contents](#table-of-contents)
 - [Basics](#basics)
   - [Installation](#installation)
-  - [Rules](#rules)
+  - [General Rules](#general-rules)
 - [Storing and sharing : storeFun](#storing-and-sharing--storefun)
-- [Cancel a state update : cancelFun](#cancel-a-state-update--cancelfun)
-- [Async functions](#async-functions)
+- [Cancel a state update : noUp()](#cancel-a-state-update--noup)
+- [Promises](#promises)
 - [Selector](#selector)
 - [Initialization](#initialization)
 - [Using a store outside react](#using-a-store-outside-react)
@@ -54,12 +54,12 @@ This package is similar to [SoKore](https://github.com/ksoze84/sokore?tab=readme
 npm add use-fun
 ```
 
-### Rules
+### General Rules
 
-* All functions you define in the Fun.set collection call a state update. If you want to define a "read only" function, declare it in the **Fun.noSet** collection. If you need a function that is not deterministic on set or not set the state, use the [cancelFun](#cancel-a-state-update--cancelfun) function. 
+* All actions you define in the collection call a state update at end. If you want to define a "read only" function, its name must end with underscore. If you need a action that is not deterministic on set or not set the state, use the [noUp](#cancel-a-state-update--noup) function. 
 * Values must change to trigger re-renders. You should create new objects or arrays if you want to change their properties or elements.
 * You can return anything in the state function, but arrays will mix up the types (union) of all the elements for each element, so **avoid arrays**, or use [ ... ] **as const** if you are using Typescript.  
-* Keep in mind that Fun.useState collection is mutated when hit a hook, changing its functions to call an update after its execution. 
+* Keep in mind that Fun collection is mutated when hit a hook or you use fun(), changing its functions to call an update after its execution. 
 
 
 ```tsx
@@ -70,15 +70,13 @@ const counterLog = ( ) => {
   return {
     state : 
       () => [count, log] as const,
-    set : {
-      add: () => {
-        count ++;
-        log = ["Adds 1 : " + count.toString(), ...log] },
-      subtract: () => {
-        count --;
-        log = ["Subtracts 1 : " + count.toString(), ...log] } },
-    noSet:{
-      getLastLog: () => log[ log.length - 1 ] }
+    add: () => {
+      count ++;
+      log = ["Adds 1 : " + count.toString(), ...log] },
+    subtract: () => {
+      count --;
+      log = ["Subtracts 1 : " + count.toString(), ...log] }, 
+    getLastLog_: () => log[ log.length - 1 ] 
   }
 }
 
@@ -103,13 +101,11 @@ function counterFun() {
 
   return {
     state : () => ({chairs, tables}),
-    set : {
-      addChairs: () => chairs++,
-      subtractChairs: () => chairs--,
-      addTables: () => tables++,
-      subtractTables: () => tables--,
-      resetAll: () => { chairs = 0; tables = 0 }
-    }
+    addChairs: () => chairs++,
+    subtractChairs: () => chairs--,
+    addTables: () => tables++,
+    subtractTables: () => tables--,
+    resetAll: () => { chairs = 0; tables = 0 }
   }
 }
 
@@ -150,18 +146,18 @@ function Reset() {
 
 
 
-## Cancel a state update : cancelFun
+## Cancel a state update : noUp()
 ```tsx
 function cancelFun( returnValue )
   returns returnValue
 ```
 
-Since functions on set collection always set an update, and state is a function that can construct an object or array every time it is called, a cancel state update signal can be set as the return value of a set function through the cancelFun method. This can be useful to avoid unnecessary re-renders. If you need the function return value, you can set it as a parameter of cancelFun method. 
+Since functions on set collection always set an update, and state is a function that can construct an object or array every time it is called, a cancel state update signal can be set as the return value of a set function through the cancelFun noUp. This can be useful to avoid unnecessary re-renders. If you need the function return value, you can set it as a parameter of noUp method. 
 
-**This does NOT UNDO the function's executed instructions.** You must cancel before change any (state) value.
+**This does NOT UNDO the function's executed instructions.** You must cancel before changing any (state) value.
 
 ```tsx
-import { fun, cancelFun } from "use-fun";
+import { noUp } from "use-fun";
 
 function chairsCount() {
   let chairs = 0;
@@ -170,69 +166,82 @@ function chairsCount() {
   return {
     state : () => ({chairs, tables}),
     set : {
-      addChairs: () => chairs >= 10 ? cancelFun() : chairs = chairs + 1,
-      subtractChairs: () => chairs <= 0 ? cancelFun() : chairs = chairs - 1
+      addChairs: () => chairs >= 10 ? noUp() : chairs = chairs + 1,
+      subtractChairs: () => chairs <= 0 ? noUp() : chairs = chairs - 1
     }
   }
 }
 ```
 
-## Async functions
+## Promises
 
-You can return promises from your actions, and the state will be updated on resolve. Or you can call a promise without returning it, and the state will be updated immediately. Either case will work independently without problem.
+If you return a promise from your action, the state will be on call and on resolve only if there are changes.
 
-But what if you want to update in call **and** in resolve?. This can be solved by referencing functions from the set collection itself:
+This example just work ok.
 ```tsx
 function detailsFun () {
   let data : any[] = [];
   let isLoading = false;
 
-  const state = () => [data, isLoading] as const
-
-  const set = {
-    //calling this function on load resolve
-    setData : (d : any[]) => { 
-      isLoading = false; 
-      data = d 
-    },
-
+  return { 
+    () => [data, isLoading] as const, 
     load : ()  => {
       isLoading = true ;
-      fetch('/api/details').then(r => r.json())
-        .then(r => set.setData( r?.data ?? [] ))  
-        //         ^        ^
-    }
+      fetch('/api/item').then(r => r.json())
+        .then(r => { r?.data ?? []; isLoading = false })  
+    } 
   }
-
-  return { state, set }
 }
 
 ```
 
+if you need to trigger re-renders between cascading promises you must call another actions:
+```tsx
+const fun = {
+  loadData : ()  => {
+    isLoading = true ;
+    return fetch('/api/item').then(r => r.json())
+      .then(i => { 
+        data = i ;
+        fun.loadDetails();
+      } )   
+  },
+  loadDetails : () => 
+    fetch(`/api/details/${data.foo}`).then(r => r.json())
+      .then( d => { details = d; isLoading = false }  )
+}
+```
+
 This will **NOT WORK** as expected:
 ```tsx
-const set = {
-
-    // Here, a Promise is returned, so update will be called when it resolves,
-    // loading the data successfully ( without a self referencing set method ), 
-    // but leaving [ isLoading = true; ] without effect.
-    badInitLoad : ()  => {
-      isLoading = true ;
-      return fetch('/api/details').then(r => r.json())
-        .then(r => { data = r?.data ?? []; isLoading = false; } )   
-    }
-
-    // In this case an update will be called immediately,
-    // updating [ isLoading = true; ] successfully,
-    // but resolve changes will not update the state. 
-    badResolveLoad : ()  => {
-      isLoading = true ;
-      fetch('/api/details').then(r => r.json())
-        .then(r => { data = r?.data ?? []; isLoading = false; } )   
-    }
-
-
+const fun = {
+  // Here, a Promise is returned, so update will be called when it resolves.
+  // "data" is asigned but will not trigger an update.
+  // "details" is assigned and "isLoading" as true, triggering a update.
+  loadWReturn : ()  => {
+    isLoading = true ;
+    return fetch('/api/item').then(r => r.json())
+      .then(i => { 
+        data = i ; // this assign will not update the state. This change will be visible when details resolve.
+        return fetch(`/api/details/${data.foo}`).then(r => r.json())
+          .then( d => { details = d; isLoading = false }  )
+      } )   
+  },
+  // In this case an update will be called immediately after resolves,
+  // setting "data" and triggering a state update,
+  // but this api is unaware second fetch, 
+  // so never triggers a re-render when it resolves,
+  // leaving "details" without visible data and "isLoading" as true.
+  loadWOReturn : ()  => {
+    isLoading = true ;
+    return fetch('/api/item').then(r => r.json())
+      .then(r => { 
+        data = r?.data ?? []; 
+        fetch(`/api/details/${data.foo}`).then(r => r.json())
+          .then( d => { details = d; isLoading = false }  ) // this assign will not update the state.
+      } )   
   }
+}
 ```
 
 ## Selector

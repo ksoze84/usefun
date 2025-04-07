@@ -343,7 +343,7 @@ const counterFun = {
 }
 
 function Counter() {
-  const [count, {add, subtract}] = useFun( countStore );
+  const [count, {add, subtract}] = useFun( counterFun );
     ...
 ```
 ```tsx
@@ -361,7 +361,7 @@ function Counter() {
 ```
 
 ## Using a stored Fun outside react
-If you plan to use a Fun store outside react, you should enable the Fun collection beforehand with the **fun( collection )** method. This function returns the same object that is passed as parameter.
+If you plan to use a Fun store outside react, you should enable the Fun collection beforehand with the **fun( collection )** method. This function returns the same object that is passed as parameter. Usually a Fun is auto-enabled on his first useFun hook call.
 
 This example uses a loader, like in Remix framework.
 ```tsx
@@ -404,4 +404,4 @@ export function loader = (  ) => {
 
 ```
 
-You don't have to initialize the Fun collection if you're not going to call promises and you are not using "this" in actions before the components are mounted.
+You don't have to enable the Fun collection to use it outside React if you're not going to call promises and you are not using "this" in actions before the components are mounted.

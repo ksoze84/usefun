@@ -57,6 +57,7 @@ npm add use-fun
 ### General Rules
 
 * All actions you define in the collection call a state update at end, **unless its name ends with underscore**. If you need a action that is not deterministic on set or not set the state, use the [noUp](#cancel-a-state-update--noup) function. 
+* **INFINITE LOOP WARNING**. If you use an action on render, such as deriving state values, this action must be read-only so as not to invoke state changes on render; this can be achieved with a name ending in an underscore or by using the get syntax.
 * Values must change to trigger re-renders. You should create new objects or arrays if you want to change their properties or elements.
 * You can return anything in the state function, but arrays will mix up the types (union) of all the elements for each element, so **avoid arrays**, or use [ ... ] **as const** if you are using Typescript.  
 * Keep in mind that a Fun collection is enabled when it reaches a hook or by calling the fun() method on it. This mutates the object for trapping its function calls, binding them to the collection, and calling an update after they execute.

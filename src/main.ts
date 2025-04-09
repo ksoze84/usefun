@@ -51,19 +51,18 @@ const dispatch = <T>( next : T, prev: T, listeners? : Set<(next : T, prev : T) =
   listeners?.forEach( l => l( next, prev ) );
 
 export const fun = <T, Q extends Record<string, any>>( funObj : FunObject<T, Q> ) : FunObject<T, Q> => {
-  let prev = funObj.state();
-
+  
   funObj[listeners] = new Set<(next : T, prev : T) => void>();
 
-  const handlePromise = ( promise : Promise<any>  ) => {
-    promise.then( () => {
+  let prev = funObj.state();
+
+  const handlePromise = () => {
       const next = funObj.state();
       if ( change( prev, next ) ){
         dispatch( next, prev, funObj[listeners] );
         prev = next;
       }
-    })
-  };
+    };
 
   Object.getOwnPropertyNames( funObj ).forEach( key => {
     if( funObj[key] instanceof Function && key !== "state" && !key.endsWith('_') ){
@@ -72,7 +71,7 @@ export const fun = <T, Q extends Record<string, any>>( funObj : FunObject<T, Q> 
         const res = func( ...args );
         const next = funObj.state();
         if( res instanceof Promise ){
-          handlePromise(res);
+          res.then( handlePromise );
           if ( !change( prev, next ) )
               return res;
         }
@@ -115,7 +114,7 @@ const makeSelectDispatcher = <T, S>( select : ( state : T ) => S, setState : Rea
 const mounting = <T, S, Q extends Record<string, any>>(fun : FunObject<T, Q>, setState : React.Dispatch<React.SetStateAction<T|S>>, select?: ( state : T ) => S ) => {
   const sst = select ? makeSelectDispatcher( select, setState ) : setState; 
   fun[listeners]!.add( sst );
-  return () => {fun[listeners]!.delete( sst )};
+  return () => { fun[listeners]!.delete( sst ) };
 }
 
 

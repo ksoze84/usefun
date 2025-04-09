@@ -114,8 +114,8 @@ const makeSelectDispatcher = <T, S>( select : ( state : T ) => S, setState : Rea
 
 const mounting = <T, S, Q extends Record<string, any>>(fun : FunObject<T, Q>, setState : React.Dispatch<React.SetStateAction<T|S>>, select?: ( state : T ) => S ) => {
   const sst = select ? makeSelectDispatcher( select, setState ) : setState; 
-  fun[listeners]?.add( sst );
-  return () => fun[listeners]?.delete( sst );
+  fun[listeners]!.add( sst );
+  return () => {fun[listeners]!.delete( sst )};
 }
 
 

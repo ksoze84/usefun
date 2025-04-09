@@ -66,8 +66,8 @@ export const fun = <T, Q extends Record<string, any>>( funObj : FunObject<T, Q> 
   };
 
   Object.getOwnPropertyNames( funObj ).forEach( key => {
-    const func = funObj[key].bind( funObj );
     if( funObj[key] instanceof Function && key !== "state" && !key.endsWith('_') ){
+      const func = funObj[key].bind( funObj );
       Object.defineProperty( funObj, key , { get : () => (...args : any[]) => {
         const res = func( ...args );
         const next = funObj.state();
@@ -114,8 +114,8 @@ const makeSelectDispatcher = <T, S>( select : ( state : T ) => S, setState : Rea
 
 const mounting = <T, S, Q extends Record<string, any>>(fun : FunObject<T, Q>, setState : React.Dispatch<React.SetStateAction<T|S>>, select?: ( state : T ) => S ) => {
   const sst = select ? makeSelectDispatcher( select, setState ) : setState; 
-  (fun as any)[listeners]?.add( sst );
-  return () => (fun as any)[listeners]?.delete( sst );
+  fun[listeners]?.add( sst );
+  return () => fun[listeners]?.delete( sst );
 }
 
 

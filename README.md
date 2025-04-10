@@ -4,11 +4,11 @@ Simple hook and state manager for React using [**Fun**]ctions.
 
 
 ```jsx
-const counter = ( count ) => { 
+const counter = ( count ) => ({ 
   state : () => count, 
   add: () => count++,
   subtract: () => count--
-}
+})
 
 function Counter() {
   const [count, {add, subtract}] = useFun( () => counter(0) );
@@ -21,7 +21,7 @@ function Counter() {
 ```
 
 KeyPoints: 
-* Work with a "Fun" collection of actions functions.
+* Work with a "Fun" collection made of actions functions.
 * This collection can be stored and shared between components.
 * Update a state variable just by assigning it. After an action executes, a re-render will be triggered.
 * Heavy functions are not instantiated in every render. Minimize overhead by avoiding useCallback, useReducer, useMemo, and dependency arrays.
@@ -44,6 +44,7 @@ This package is similar to [SoKore](https://github.com/ksoze84/sokore?tab=readme
 - [Selector](#selector)
 - [Initialization](#initialization)
 - [Using a stored Fun outside react](#using-a-stored-fun-outside-react)
+  - [Enabling the Fun collection is necessary when:](#enabling-the-fun-collection-is-necessary-when)
 
 
 ## Basics
@@ -279,9 +280,8 @@ The useFun can accept an Fun collection or a function that returns it. The Fun a
 ```tsx
 const counter = ( count ) => ({ 
   state: () => count,
-  set: {
-    add: () => count++,
-    sub: () => count--  };
+  add: () => count++,
+  sub: () => count-- 
 });
 
 function Counter() {
@@ -362,7 +362,7 @@ function Counter() {
 ```
 
 ## Using a stored Fun outside react
-If you plan to use a Fun store outside react, you should enable the Fun collection beforehand with the **fun( collection )** method. This function returns the same object that is passed as parameter. Usually a Fun is auto-enabled on his first useFun hook call.
+You can use a Fun Store directly outside React, but is very likely that you need to enable it beforehand with the **fun( collection )** method. This function returns the same object that is passed as parameter with its actions enabled to call react state updates. Usually a Fun collection is auto-enabled on his first useFun hook call.
 
 This example uses a loader, like in Remix framework.
 ```tsx
@@ -405,4 +405,9 @@ export function loader = (  ) => {
 
 ```
 
-You don't have to enable the Fun collection to use it outside React if you're not going to call promises and you are not using "this" in actions before the components are mounted.
+
+### Enabling the Fun collection is necessary when:
+* Promises are invoked before a component that uses it is mounted.
+* "this" is used in actions before a component that uses it is mounted.
+
+Enabling a collection is essentially binding its functions and trapping their calls to trigger a state update. 

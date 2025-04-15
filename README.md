@@ -36,6 +36,7 @@ This package is similar to [SoKore](https://github.com/ksoze84/sokore?tab=readme
 
 - [Table of contents](#table-of-contents)
 - [Basics](#basics)
+  - [Usage](#usage)
   - [Installation](#installation)
   - [General Rules](#general-rules)
 - [Storing and sharing](#storing-and-sharing)
@@ -49,6 +50,20 @@ This package is similar to [SoKore](https://github.com/ksoze84/sokore?tab=readme
 
 
 ## Basics
+
+### Usage
+```tsx
+useFun( initFun, select? )
+  returns [ state, funCollection ]
+```
+**initFun** : A Fun collection, a function that returns a Fun collection or a Class that construct a Fun collection. 
+
+**select** : Optional parameter. a Function that accepts the "stateDefinition" and returns a derived state.
+
+**state** : The "stateDefinition" with updated values.
+
+**funCollection** : The Fun collection defined by initFun. A Fun collection is an object that have actions and a function named state that returns a "stateDefinition". 
+
 
 ### Installation
 
@@ -276,7 +291,7 @@ const [ [tables, name], {addTables, subtractTables} ]
 
 ## Initialization
 
-The useFun can accept an Fun collection or a function that returns it. The Fun and the useFun hook can be initialized different ways:
+The useFun can accept an Fun collection, a function that returns it, or class that construct it. The Fun and the useFun hook can be initialized different ways:
 
 ```tsx
 const counter = ( count ) => ({ 
@@ -345,7 +360,7 @@ class CounterFun {
 }
 
 function Counter() {
-  const [count, {add, subtract}] = useFun( () => new CounterFun() );
+  const [count, {add, subtract}] = useFun( CounterFun );
     ...
 ```
 ```tsx

@@ -20,6 +20,7 @@ export declare const fun: <T, Q extends Record<string, any>>(funObj: FunObject<T
  */
 export declare function useFun<T, Q extends Record<string, any>>(fun: FunObject<T, Q>): Readonly<[T, Omit<Q, 'state'>]>;
 export declare function useFun<T, Q extends Record<string, any>>(fun: () => FunObject<T, Q>): Readonly<[T, Omit<Q, 'state'>]>;
+export declare function useFun<T, Q extends Record<string, any>>(fun: new () => FunObject<T, Q>): Readonly<[T, Omit<Q, 'state'>]>;
 /**
  * Hook that takes a funObject and optionally a selector and returns a state and an actions object.
  *
@@ -27,4 +28,5 @@ export declare function useFun<T, Q extends Record<string, any>>(fun: () => FunO
  */
 export declare function useFun<T, S, Q extends Record<string, any>>(fun: FunObject<T, Q>, select: (state: T) => S): Readonly<[S, Omit<Q, 'state'>]>;
 export declare function useFun<T, S, Q extends Record<string, any>>(fun: () => FunObject<T, Q>, select: (state: T) => S): Readonly<[S, Omit<Q, 'state'>]>;
+export declare function useFun<T, S, Q extends Record<string, any>>(fun: new () => FunObject<T, Q>, select: (state: T) => S): Readonly<[S, Omit<Q, 'state'>]>;
 export {};

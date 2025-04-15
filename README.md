@@ -442,7 +442,7 @@ class ExtendedCounterFun extends CounterFun {
 }
 ```
 
-Alternatively, you can use get and set syntax for each state variable. And use the extendFun( Fun, extend ) utility function.
+Alternatively, you can use get and set syntax for each state variable. Then use the extendFun( Fun, extend ) utility function. Extending must be done before enabling Fun.
 ```tsx
 const classRoomSetup = ( chairs = 0, tables = 0 ) => ({ 
   state : () => [chairs, tables] as const, 
@@ -460,6 +460,6 @@ const classRoomSetup = ( chairs = 0, tables = 0 ) => ({
 })
 
 
-const extendedClassRoomSetup =  extendFun( classRoomSetup, { reset : () => this.chairs = 0; this.tables = 0 } );
+const extendedClassRoomSetup =  extendFun( classRoomSetup, { reset() { this.chairs = 0; this.tables = 0 } } );
 
 ```

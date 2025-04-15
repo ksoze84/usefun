@@ -24,6 +24,16 @@ SOFTWARE.
 
 import React, { useEffect, useMemo, useState } from "react";
 
+
+const handler={construct(){return handler}} //Must return ANY object, so reuse one
+const isConstructor=(x : any)=>{
+    try{
+        return !!(new (new Proxy(x,handler))())
+    }catch(e : unknown){
+        return !(e instanceof Error)
+    }
+}
+
 const listeners = Symbol("listeners");
 const cancel = Symbol("cancel");
 
@@ -92,8 +102,14 @@ export const fun = <T, Q extends Record<string, any>>( funObj : FunObject<T, Q> 
 }
 
 
-const init = <T, S, Q extends Record<string, any>>( funT : FunObject<T,Q> | (() => FunObject<T,Q>), select?: ( state : T ) => S ) : [T | S, FunObject<T, Q> ]=> {
-  const funObject = funT instanceof Function ? funT() : funT;
+const init = <T, S, Q extends Record<string, any>>( funT : FunObject<T,Q> | (() => FunObject<T,Q>) | ( new () => FunObject<T, Q>), select?: ( state : T ) => S ) : [T | S, FunObject<T, Q> ]=> {
+  let funObject: FunObject<T, Q>;
+  if ( isConstructor( funT ) )
+    funObject = new (funT as new () => FunObject<T, Q>)();
+  else if (funT instanceof Function) 
+    funObject = (funT as () => FunObject<T, Q>)();
+  else 
+    funObject = funT;
   if( !funObject[listeners] ) fun(funObject);
   return [select ? select( funObject.state() ) : funObject.state(), funObject]
 }
@@ -130,6 +146,7 @@ const mounting = <T, S, Q extends Record<string, any>>(fun : FunObject<T, Q>, se
  */
 export function useFun<T, Q extends Record<string, any>>( fun : FunObject<T, Q> ) : Readonly<[ T, Omit<Q, 'state'> ]>
 export function useFun<T, Q extends Record<string, any>>( fun : () => FunObject<T, Q> ) : Readonly<[ T, Omit<Q, 'state'> ]>
+export function useFun<T, Q extends Record<string, any>>( fun : new () => FunObject<T, Q> ) : Readonly<[ T, Omit<Q, 'state'> ]>
 
 
 /**
@@ -139,9 +156,10 @@ export function useFun<T, Q extends Record<string, any>>( fun : () => FunObject<
  */
 export function useFun<T, S, Q extends Record<string, any>>( fun : FunObject<T, Q>, select: ( state : T ) => S  ) : Readonly<[ S, Omit<Q, 'state'> ]>
 export function useFun<T, S, Q extends Record<string, any>>( fun : () => FunObject<T, Q>, select: ( state : T ) => S  ) : Readonly<[ S, Omit<Q, 'state'> ]>
+export function useFun<T, S, Q extends Record<string, any>>( fun : new () => FunObject<T, Q>, select: ( state : T ) => S  ) : Readonly<[ S, Omit<Q, 'state'> ]>
 
 
-export function useFun<T, S, Q extends Record<string, any>>( funT : FunObject<T, Q> | ( () => FunObject<T, Q> ), select?: ( state : T ) => S  ) : Readonly<[ T | S, Q ]> {
+export function useFun<T, S, Q extends Record<string, any>>( funT : FunObject<T, Q> | ( () => FunObject<T, Q> ) | ( new () => FunObject<T, Q>), select?: ( state : T ) => S  ) : Readonly<[ T | S, Q ]> {
   const [ initialState, fun ] = useMemo( () => init( funT, select ), [] );
   const [ state, setState ] = useState<T|S>( initialState )
 

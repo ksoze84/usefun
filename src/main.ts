@@ -27,6 +27,11 @@ import React, { useEffect, useMemo, useState } from "react";
 const listeners = Symbol("listeners");
 const cancel = Symbol("cancel");
 
+export function extendFun<T extends object, K>( fun : T, other : K & ThisType<K & T> ) : T & K {
+  return Object.assign( fun, other ) as T & K;
+}
+
+
 type FunObj<T> = {
   state : () => T;
   [listeners]? : Set<(next : T, prev : T) => void>;

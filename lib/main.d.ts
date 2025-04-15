@@ -1,4 +1,5 @@
 declare const listeners: unique symbol;
+export declare function extendFun<T extends object, K>(fun: T, other: K & ThisType<K & T>): T & K;
 type FunObj<T> = {
     state: () => T;
     [listeners]?: Set<(next: T, prev: T) => void>;

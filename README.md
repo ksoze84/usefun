@@ -4,14 +4,14 @@ Simple hook and state manager for React using [**Fun**]ctions.
 
 
 ```jsx
-const counter = ( count ) => ({ 
+const counter = ( count = 0 ) => ({ 
   state : () => count, 
   add: () => count++,
   subtract: () => count--
 })
 
 function Counter() {
-  const [count, {add, subtract}] = useFun( () => counter(0) );
+  const [count, {add, subtract}] = useFun( counter );
   return <>
     <span>{count}</span>
     <button onClick={add}>+</button>
@@ -45,6 +45,7 @@ This package is similar to [SoKore](https://github.com/ksoze84/sokore?tab=readme
 - [Initialization](#initialization)
 - [Using a stored Fun outside react](#using-a-stored-fun-outside-react)
   - [Enabling the Fun collection is necessary when:](#enabling-the-fun-collection-is-necessary-when)
+- [Extending a Fun collection](#extending-a-fun-collection)
 
 
 ## Basics
@@ -336,6 +337,18 @@ function Counter() {
     ...
 ```
 ```tsx
+class CounterFun { 
+  count = 0;
+  state = () => this.count;
+  add = () => this.count++;
+  sub = () => this.count--; 
+}
+
+function Counter() {
+  const [count, {add, subtract}] = useFun( () => new CounterFun() );
+    ...
+```
+```tsx
 const counterFun = { 
   count : 0,
   state : () => count,
@@ -411,3 +424,42 @@ export function loader = (  ) => {
 * "this" is used in actions before a component that uses it is mounted.
 
 Enabling a collection is essentially binding its functions and trapping their calls to trigger a state update. 
+
+## Extending a Fun collection
+
+The correct way to extend a fun with new actions is to declare it as class in the first place, then others can extend this class.
+```tsx
+class CounterFun { 
+  count = 0;
+  state = () => this.count;
+  add = () => this.count++;
+  sub = () => this.count--; 
+}
+
+class ExtendedCounterFun extends CounterFun {
+  reset = () => this.count = 0;
+  set = ( n : number ) => this.count = n:
+}
+```
+
+Alternatively, you can use get and set syntax for each state variable. And use the extendFun( Fun, extend ) utility function.
+```tsx
+const classRoomSetup = ( chairs = 0, tables = 0 ) => ({ 
+  state : () => [chairs, tables] as const, 
+
+  get chairs () { return chairs },
+  set chairs ( n : number) { chairs = n }
+
+  get tables () { return tables },
+  set tables ( n : number) { tables = n }
+
+  addChairs: () => chairs++,
+  subChairs: () => chairs--,
+  addTables: () => tables++,
+  subTables: () => tables--,
+})
+
+
+const extendedClassRoomSetup =  extendFun( classRoomSetup, { reset : () => this.chairs = 0; this.tables = 0 } );
+
+```

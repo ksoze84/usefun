@@ -82,7 +82,7 @@ export const fun = <T, Q extends Record<string, any>>( funObj : FunObject<T, Q> 
   Object.getOwnPropertyNames( funObj ).forEach( key => {
     if( funObj[key] instanceof Function && key !== "state" && !key.endsWith('_') ){
       const func = funObj[key].bind( funObj );
-      Object.defineProperty( funObj, key , { get : () => (...args : any[]) => {
+      (funObj as any)[key] = (...args : any[]) => {
         const res = func( ...args );
         const next = funObj.state();
         if( res instanceof Promise ){
@@ -94,7 +94,7 @@ export const fun = <T, Q extends Record<string, any>>( funObj : FunObject<T, Q> 
         dispatch( next, prev, funObj[listeners] );
         prev = next;
         return res;
-      }})
+      }
     }
   })
 

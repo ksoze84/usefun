@@ -204,11 +204,11 @@ function detailsFun () {
   let isLoading = false;
 
   return { 
-    () => [data, isLoading] as const, 
+    state : () => [data, isLoading] as const, 
     load : ()  => {
       isLoading = true ;
-      fetch('/api/item').then(r => r.json())S
-        .then(r => { r?.data ?? []; isLoading = false })  
+      return fetch('/api/item').then(r => r.json())
+        .then(r => { data = r?.data ?? []; isLoading = false })  
     } 
   }
 }
